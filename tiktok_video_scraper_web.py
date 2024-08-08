@@ -64,7 +64,6 @@ class TikTokVideoScraperWeb:
             print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
             raise SystemExit('error getting html web video')
 
-        print(tiktok_video_url, tiktok_thumb)
         return tiktok_video_url, tiktok_thumb
 
 
