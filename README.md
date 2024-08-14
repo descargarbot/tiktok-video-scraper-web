@@ -22,7 +22,8 @@
 </ul>
 <h2>use case example</h2>
 
-    # use case example
+    #import the class TikTokVideoScraperWeb
+    from tiktok_video_scraper_web import TikTokVideoScraperWeb
 
     # set tiktok video url
     tiktok_url = 'your tiktok video url'
