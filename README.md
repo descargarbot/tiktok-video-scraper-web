@@ -52,10 +52,11 @@
  
     tiktok_video.tiktok_session.close()
     
-  or you can use the CLI
+  > [!NOTE]\
+  > you can use the CLI
   <br><br>
-  <code>python3 tiktok_video_scraper_web.py TIKTOK_URL</code>
-<br><br>
+  > <code>python3 tiktok_video_scraper_web.py TIKTOK_URL</code>
+<br>
 <h2>online</h2>
 <ul>
   ⤵
