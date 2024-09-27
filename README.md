@@ -34,9 +34,6 @@
     # set the proxy (optional, u can run it with ur own ip)
     #tiktok_video.set_proxies('socks5://157.230.250.185:2144', 'socks5://157.230.250.185:2144')
 
-    # get video id from url, just for filename in web scraper
-    video_id = tiktok_video.get_video_id_by_url(tiktok_url)
-    
     # get video url from video id
     tiktok_video_url, video_thumbnail = tiktok_video.get_video_data_by_video_url(tiktok_url)
 
