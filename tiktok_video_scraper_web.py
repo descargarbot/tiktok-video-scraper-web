@@ -33,7 +33,7 @@ class TikTokVideoScraperWeb:
             note that the url obtained is not accessible without 
             the cookies obtained in the first get and that is why
             the urls obtained from web are not shareable """
-
+        
         try:
             html_tiktok_web_video = self.tiktok_session.get(tiktok_url, headers=self.headers, proxies=self.proxies).text
         except Exception as e:
@@ -57,50 +57,79 @@ class TikTokVideoScraperWeb:
             print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
             raise SystemExit('error getting json web video')
 
+        video_nsfw = 0
+        tiktok_video_url = []
         try:
             tiktok_thumb = json_video_data['__DEFAULT_SCOPE__']['webapp.video-detail']['itemInfo']['itemStruct']['video']['dynamicCover']
-            tiktok_video_url = json_video_data['__DEFAULT_SCOPE__']['webapp.video-detail']['itemInfo']['itemStruct']['video']['playAddr']
+            tiktok_video_url.append(json_video_data['__DEFAULT_SCOPE__']['webapp.video-detail']['itemInfo']['itemStruct']['video']['playAddr'])
+
+            # if the item is a photo story video-> playAddr = '', just like dynamicCover
+            if tiktok_video_url[0] == '':
+                tiktok_video_url = []
+                raise ValueError("photo story video-> playAddr empty")
         except Exception as e:
-            print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
-            raise SystemExit('error getting html web video')
+            try:
+                tiktok_thumb = json_video_data['__DEFAULT_SCOPE__']['webapp.video-detail']['itemInfo']['itemStruct']['video']['cover']
+                tiktok_video_url.append(json_video_data['__DEFAULT_SCOPE__']['webapp.video-detail']['itemInfo']['itemStruct']['music']['playUrl'])
+                tiktok_video_url.append(tiktok_thumb)
+                video_nsfw = -2
+            except Exception as e:
+                print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
+                raise SystemExit('error getting html web video')
 
-        return tiktok_video_url, tiktok_thumb
+        return tiktok_video_url, tiktok_thumb, video_nsfw
 
 
-    def download(self, tiktok_video_url: str, video_id: str) -> list:
+    def download(self, tiktok_video_url: list, video_id: str, _type: int) -> list:
         """ download the video """
 
-        try:
-            video = self.tiktok_session.get(tiktok_video_url, headers=self.headers, proxies=self.proxies, stream=True)
-        except Exception as e:
-            print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
-            raise SystemExit('error downloading video')
+        download_list = []
+        count = 0
 
-        
-        path_filename = f'{video_id}.mp4'
-        try:
-            with open(path_filename, 'wb') as f:
-                for chunk in video.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-                        f.flush()
-        except Exception as e:
-            print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
-            raise SystemExit('error writting video')
+        for item in tiktok_video_url:
+            try:
+                video = self.tiktok_session.get(item, headers=self.headers, proxies=self.proxies)
+            except Exception as e:
+                print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
+                raise SystemExit('error downloading video')
 
-        return [path_filename]
+            if _type == 0:
+                path_filename = f'{video_id}.mp4'
+            else:
+                if count == 0:
+                    path_filename = f'{video_id}.mp3'
+                else:
+                    path_filename = f'{video_id}_{count}.jpeg'
+            try:
+                with open(path_filename, 'wb') as f:
+                    for chunk in video.iter_content(chunk_size=1024):
+                        if chunk:
+                            f.write(chunk)
+                            f.flush()
+            except Exception as e:
+                print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
+                raise SystemExit('error writting video')
+
+            count = count + 1
+            download_list.append(path_filename)
+ 
+        return download_list
 
 
     def get_video_filesize(self, video_url: str) -> str:
         """ get file size of requested video """
 
-        try:
-            video_size = self.tiktok_session.head(video_url, headers=self.headers, proxies=self.proxies)
-        except Exception as e:
-            print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
-            raise SystemExit('error getting video file size')
+        filesize_list = []
+        for item in video_url:
 
-        return video_size.headers['content-length']
+            try:
+                video_size = self.tiktok_session.head(item, headers=self.headers, proxies=self.proxies)
+                filesize_list.append(video_size.headers['content-length'])
+            except Exception as e:
+                print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
+                raise SystemExit('error getting video file size')
+
+        return filesize_list
 
     def get_video_id_by_url(self, video_url: str) -> str:
         """ get video id for use as filename """
@@ -130,11 +159,8 @@ if __name__ == "__main__":
     # set the proxy (optional, u can run it with ur own ip)
     #tiktok_video.set_proxies('socks5://157.230.250.185:2144', 'socks5://157.230.250.185:2144')
 
-    # get video id from url, just for filename in web scraper
-    video_id = tiktok_video.get_video_id_by_url(tiktok_url)
-    
     # get video url from video id
-    tiktok_video_url, video_thumbnail = tiktok_video.get_video_data_by_video_url(tiktok_url)
+    tiktok_video_url, video_thumbnail, video_nsfw = tiktok_video.get_video_data_by_video_url(tiktok_url)
 
     # get the video filesize
     video_size = tiktok_video.get_video_filesize(tiktok_video_url)
@@ -143,7 +169,8 @@ if __name__ == "__main__":
     # get video id for a filename
     video_id = tiktok_video.get_video_id_by_url(tiktok_url)
 
-    # download video by url
-    downloaded_video_list = tiktok_video.download(tiktok_video_url, video_id)
+    # if video_nsfw = 0 is a video, no matter where came from(story/feed)
+    # if video_nsfw = -2 is a "carrusel" from story
+    downloaded_video_list = tiktok_video.download(tiktok_video_url, video_id, video_nsfw)
  
     tiktok_video.tiktok_session.close()
