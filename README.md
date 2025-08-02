@@ -35,7 +35,7 @@
     #tiktok_video.set_proxies('socks5://157.230.250.185:2144', 'socks5://157.230.250.185:2144')
 
     # get video url from video id
-    tiktok_video_url, video_thumbnail = tiktok_video.get_video_data_by_video_url(tiktok_url)
+    tiktok_video_url, video_thumbnail, video_nsfw = tiktok_video.get_video_data_by_video_url(tiktok_url)
 
     # get the video filesize
     video_size = tiktok_video.get_video_filesize(tiktok_video_url)
@@ -44,8 +44,9 @@
     # get video id for a filename
     video_id = tiktok_video.get_video_id_by_url(tiktok_url)
 
-    # download video by url
-    downloaded_video_list = tiktok_video.download(tiktok_video_url, video_id)
+    # if video_nsfw = 0 is a video, no matter where came from(story/feed)
+    # if video_nsfw = -2 is a "carrusel" from story
+    downloaded_video_list = tiktok_video.download(tiktok_video_url, video_id, video_nsfw)
  
     tiktok_video.tiktok_session.close()
     
