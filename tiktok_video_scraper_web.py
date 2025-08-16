@@ -35,7 +35,10 @@ class TikTokVideoScraperWeb:
             the urls obtained from web are not shareable """
         
         try:
-            html_tiktok_web_video = self.tiktok_session.get(tiktok_url, headers=self.headers, proxies=self.proxies).text
+            html_tiktok_web_video = self.tiktok_session.get(tiktok_url, headers=self.headers, proxies=self.proxies,timeout=5).text
+        except requests.exceptions.Timeout:
+            print("timeout in get_video_data_by_video_url")
+            raise SystemExit("timeout in get_video_data_by_video_url")
         except Exception as e:
             print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
             raise SystemExit('error getting html web video')
@@ -123,8 +126,11 @@ class TikTokVideoScraperWeb:
         for item in video_url:
 
             try:
-                video_size = self.tiktok_session.head(item, headers=self.headers, proxies=self.proxies)
+                video_size = self.tiktok_session.head(item, headers=self.headers, proxies=self.proxies, timeout=5)
                 filesize_list.append(video_size.headers['content-length'])
+            except requests.exceptions.Timeout:
+                print("timeout in get_video_filesize")
+                raise SystemExit("timeout in get_video_filesize")
             except Exception as e:
                 print(e, "\nError on line {}".format(sys.exc_info()[-1].tb_lineno))
                 raise SystemExit('error getting video file size')
